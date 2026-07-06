@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sante-bien-etre-bf.vercel.app/sitemap.xml
