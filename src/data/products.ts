@@ -36,7 +36,7 @@ export type Category = (typeof categories)[number];
 // WHATSAPP
 // ==========================================
 // Numéro WhatsApp au format international (sans le +)
-export const WHATSAPP_NUMBER = "22670274866";
+export const WHATSAPP_NUMBER = "22679352734";
 
 export function generateWhatsAppLink(product: Product, quantity: number = 1): string {
   const totalPrice = product.price * quantity;
