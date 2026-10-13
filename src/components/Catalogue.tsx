@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Search, SlidersHorizontal, Leaf, Loader2 } from 'lucide-react';
+import { Search, Leaf, Loader2 } from 'lucide-react';
+import type { Category, Product } from '../data/products';
 import { categories, type Category, type Product } from '../data/products';
 import { fetchProducts } from '../data/productsService';
 import ProductCard from './ProductCard';
@@ -14,7 +14,6 @@ export default function Catalogue() {
   const [activeCategory, setActiveCategory] = useState<Category>('Tous');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('default');
-  const [showFilters, setShowFilters] = useState(false);
   const { ref, isInView } = useInView();
 
   // ==========================================
@@ -44,7 +43,18 @@ export default function Catalogue() {
 
     loadProducts();
   }, []);
-
+  
+    // Reçoit la recherche et la catégorie depuis la Navbar
+  useEffect(() => {
+    const onFilter = (e: Event) => {
+      const { category, query } = (e as CustomEvent<{ category: Category; query: string }>).detail;
+      setActiveCategory(category);
+      setSearchQuery(query);
+    };
+    window.addEventListener('catalogue:filter', onFilter);
+    return () => window.removeEventListener('catalogue:filter', onFilter);
+  }, []);
+  
   // Sanitize search input
   const sanitizedQuery = searchQuery.replace(/[<>{}]/g, '').trim().toLowerCase();
 
@@ -86,7 +96,7 @@ export default function Catalogue() {
   }, [products, activeCategory, sanitizedQuery, sortBy]);
 
   return (
-    <section id="catalogue" className="relative py-20 md:py-32 bg-gradient-to-b from-white via-gray-50/50 to-white">
+    <section id="catalogue" className="relative pt-32 pb-16 md:pt-40 md:pb-24 bg-gradient-to-b from-white via-gray-50/50 to-white">
       {/* Background decoration */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-green-50/50 rounded-full blur-3xl -z-10" />
 
@@ -136,28 +146,28 @@ export default function Catalogue() {
         {/* CONTENU PRINCIPAL - affiché seulement après le chargement */}
         {!isLoading && !error && (
           <>
-            {/* Filters */}
-            <div className="mb-10 space-y-4">
-              {/* Search & toggle */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher un produit..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    maxLength={100}
-                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent shadow-sm transition-all"
-                  />
-                </div>
+             {/* Tri */}
+            <div className="mb-6 flex items-center justify-end gap-3">
+              <span className="text-sm text-gray-600">Trier par :</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-black/20"
+              >
+                <option value="default">Par défaut</option>
+                <option value="price-asc">Prix croissant</option>
+                <option value="price-desc">Prix décroissant</option>
+                <option value="rating">Meilleures notes</option>
+                <option value="name">Nom A-Z</option>
+              </select>
+            </div>
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl border transition-all font-medium text-sm ${
-                    showFilters
-                      ? 'bg-green-50 border-green-300 text-green-700'
-                      : 'bg-white border-gray-200 text-gray-600 hover:border-green-200'
-                  }`}
+                 onClick={() => {
+  setSearchQuery('');
+  setActiveCategory('Tous');
+  setSortBy('default');
+  window.dispatchEvent(new Event('catalogue:reset'));
+}}
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   Filtres
