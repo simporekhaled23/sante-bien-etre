@@ -1,120 +1,94 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, Leaf } from 'lucide-react';
-
-const navLinks = [
-  { label: 'Accueil', href: '#accueil' },
-  { label: 'À Propos', href: '#histoire' },
-  { label: 'Catalogue', href: '#catalogue' },
-  { label: 'Témoignages', href: '#temoignages' },
-  { label: 'Contact', href: '#contact' },
-];
+import { Search, X, Leaf } from 'lucide-react';
+import { categories, type Category } from '../data/products';
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<Category>('Tous');
 
+  // Envoie le filtre au Catalogue
+  const broadcast = (c: Category, q: string) => {
+    window.dispatchEvent(
+      new CustomEvent('catalogue:filter', { detail: { category: c, query: q } })
+    );
+  };
+
+  // Le Catalogue peut demander de tout réinitialiser
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onReset = () => {
+      setQuery('');
+      setCategory('Tous');
+    };
+    window.addEventListener('catalogue:reset', onReset);
+    return () => window.removeEventListener('catalogue:reset', onReset);
   }, []);
 
-  const handleLinkClick = () => setIsOpen(false);
+  const handleQuery = (value: string) => {
+    setQuery(value);
+    broadcast(category, value);
+  };
+
+  const handleCategory = (c: Category) => {
+    setCategory(c);
+    broadcast(c, query);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-white/90 backdrop-blur-xl shadow-lg shadow-green-200/20 border-b border-green-100'
-          : 'bg-transparent'
-      }`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <a href="#accueil" className="flex items-center gap-2 group">
-            <div className={`p-2 rounded-xl transition-all duration-300 ${
-              scrolled
-                ? 'bg-gradient-to-br from-green-500 to-emerald-700'
-                : 'bg-white/20 backdrop-blur-sm'
-            }`}>
-              <Leaf className={`w-5 h-5 transition-colors ${
-                scrolled ? 'text-white' : 'text-white'
-              }`} />
+        {/* Rangée 1 : logo + recherche */}
+        <div className="flex items-center gap-3 sm:gap-6 h-16 md:h-20">
+          <a href="#catalogue" className="flex items-center gap-2 shrink-0" aria-label="Santé & Bien être">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-emerald-700">
+              <Leaf className="w-5 h-5 text-white" />
             </div>
-            <div className="flex flex-col">
-              <span className={`text-lg md:text-xl font-serif font-bold tracking-wide transition-colors duration-300 leading-tight ${
-                scrolled ? 'text-green-800' : 'text-white'
-              }`}>
-                Santé & Bien être
-              </span>
-            </div>
+            <span className="hidden sm:block text-lg md:text-xl font-serif font-bold tracking-wide text-green-800 leading-tight">
+              Santé & Bien être
+            </span>
           </a>
 
-          {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105 ${
-                  scrolled
-                    ? 'text-gray-700 hover:text-green-700 hover:bg-green-50'
-                    : 'text-white/90 hover:text-white hover:bg-white/15'
-                }`}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => handleQuery(e.target.value.replace(/[<>{}]/g, ''))}
+              placeholder="Rechercher un produit..."
+              maxLength={100}
+              className="w-full h-11 pl-5 pr-12 rounded-full bg-gray-100 text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
+            />
+            {query ? (
+              <button
+                onClick={() => handleQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black"
+                aria-label="Effacer la recherche"
               >
-                {link.label}
-              </a>
-            ))}
-            <a
-              href="#catalogue"
-              className="ml-3 px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-700 text-white text-sm font-semibold rounded-full hover:shadow-lg hover:shadow-green-300/50 transition-all duration-300 hover:scale-105"
-            >
-              Nos Produits
-            </a>
+                <X className="w-5 h-5" />
+              </button>
+            ) : (
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+            )}
           </div>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={`lg:hidden p-2 rounded-xl transition-colors ${
-              scrolled
-                ? 'text-green-700 hover:bg-green-50'
-                : 'text-white hover:bg-white/15'
-            }`}
-            aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
         </div>
-      </div>
 
-      {/* Mobile menu */}
-      <div
-        className={`lg:hidden transition-all duration-300 overflow-hidden ${
-          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="bg-white/95 backdrop-blur-xl border-t border-green-100 shadow-xl px-4 py-4 space-y-1">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={handleLinkClick}
-              className="block px-4 py-3 rounded-xl text-gray-700 font-medium hover:bg-green-50 hover:text-green-700 transition-all"
+        {/* Rangée 2 : catégories */}
+        <nav
+          aria-label="Catégories"
+          className="flex gap-1 overflow-x-auto pb-2 md:pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {categories.map((c) => (
+            <button
+              key={c}
+              onClick={() => handleCategory(c)}
+              className={`shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm uppercase tracking-wide transition-colors ${
+                category === c ? 'bg-black text-white' : 'text-gray-700 hover:text-black'
+              }`}
             >
-              {link.label}
-            </a>
+              {c}
+            </button>
           ))}
-          <a
-            href="#catalogue"
-            onClick={handleLinkClick}
-            className="block mt-3 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-700 text-white text-center font-semibold rounded-xl"
-          >
-            Découvrir les Produits
-          </a>
-        </div>
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }
