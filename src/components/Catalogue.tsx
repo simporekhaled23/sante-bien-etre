@@ -1,6 +1,6 @@
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Leaf, Loader2 } from 'lucide-react';
 import type { Category, Product } from '../data/products';
-import { categories, type Category, type Product } from '../data/products';
 import { fetchProducts } from '../data/productsService';
 import ProductCard from './ProductCard';
 import { useInView } from '../hooks/useInView';
@@ -8,24 +8,16 @@ import { useInView } from '../hooks/useInView';
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'rating' | 'name';
 
 export default function Catalogue() {
-  // ==========================================
-  // ÉTATS EXISTANTS
-  // ==========================================
   const [activeCategory, setActiveCategory] = useState<Category>('Tous');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const { ref, isInView } = useInView();
 
-  // ==========================================
-  // 🆕 NOUVEAUX ÉTATS POUR SANITY
-  // ==========================================
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ==========================================
-  // 🆕 CHARGEMENT DES PRODUITS DEPUIS SANITY
-  // ==========================================
+  // Chargement des produits depuis Sanity
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -43,8 +35,8 @@ export default function Catalogue() {
 
     loadProducts();
   }, []);
-  
-    // Reçoit la recherche et la catégorie depuis la Navbar
+
+  // Reçoit la recherche et la catégorie envoyées par la Navbar
   useEffect(() => {
     const onFilter = (e: Event) => {
       const { category, query } = (e as CustomEvent<{ category: Category; query: string }>).detail;
@@ -54,19 +46,16 @@ export default function Catalogue() {
     window.addEventListener('catalogue:filter', onFilter);
     return () => window.removeEventListener('catalogue:filter', onFilter);
   }, []);
-  
-  // Sanitize search input
+
   const sanitizedQuery = searchQuery.replace(/[<>{}]/g, '').trim().toLowerCase();
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
 
-    // Filter by category
     if (activeCategory !== 'Tous') {
       filtered = filtered.filter((p) => p.category === activeCategory);
     }
 
-    // Filter by search
     if (sanitizedQuery) {
       filtered = filtered.filter(
         (p) =>
@@ -76,7 +65,6 @@ export default function Catalogue() {
       );
     }
 
-    // Sort
     switch (sortBy) {
       case 'price-asc':
         filtered = [...filtered].sort((a, b) => a.price - b.price);
@@ -96,13 +84,12 @@ export default function Catalogue() {
   }, [products, activeCategory, sanitizedQuery, sortBy]);
 
   return (
-    <section id="catalogue" className="relative pt-32 pb-16 md:pt-40 md:pb-24 bg-gradient-to-b from-white via-gray-50/50 to-white">
-      {/* Background decoration */}
+    <section id="catalogue" className="relative pt-36 pb-16 md:pt-48 md:pb-24 bg-gradient-to-b from-white via-gray-50/50 to-white">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-green-50/50 rounded-full blur-3xl -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div ref={ref} className={`text-center mb-14 transition-all duration-700 ${isInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
+        {/* En-tête */}
+        <div ref={ref} className={`text-center mb-10 transition-all duration-700 ${isInView ? 'animate-fade-in-up' : 'opacity-0'}`}>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-700 text-sm font-medium mb-6">
             <Leaf className="w-4 h-4" />
             Notre Catalogue
@@ -118,7 +105,7 @@ export default function Catalogue() {
           </p>
         </div>
 
-        {/* 🆕 ÉTAT DE CHARGEMENT */}
+        {/* Chargement */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-green-500 animate-spin mb-4" />
@@ -126,7 +113,7 @@ export default function Catalogue() {
           </div>
         )}
 
-        {/* 🆕 ÉTAT D'ERREUR */}
+        {/* Erreur */}
         {error && !isLoading && (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
@@ -143,10 +130,10 @@ export default function Catalogue() {
           </div>
         )}
 
-        {/* CONTENU PRINCIPAL - affiché seulement après le chargement */}
+        {/* Contenu principal */}
         {!isLoading && !error && (
           <>
-             {/* Tri */}
+            {/* Tri */}
             <div className="mb-6 flex items-center justify-end gap-3">
               <span className="text-sm text-gray-600">Trier par :</span>
               <select
@@ -161,70 +148,10 @@ export default function Catalogue() {
                 <option value="name">Nom A-Z</option>
               </select>
             </div>
-                <button
-                 onClick={() => {
-  setSearchQuery('');
-  setActiveCategory('Tous');
-  setSortBy('default');
-  window.dispatchEvent(new Event('catalogue:reset'));
-}}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filtres
-                </button>
-              </div>
 
-              {/* Sort - shown when filters visible */}
-              <div className={`overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-600">Trier par :</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                    <option value="default">Par défaut</option>
-                    <option value="price-asc">Prix croissant</option>
-                    <option value="price-desc">Prix décroissant</option>
-                    <option value="rating">Meilleures notes</option>
-                    <option value="name">Nom A-Z</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Category pills */}
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => {
-                  const count =
-                    category === 'Tous'
-                      ? products.length
-                      : products.filter((p) => p.category === category).length;
-
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => setActiveCategory(category)}
-                      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                        activeCategory === category
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-700 text-white shadow-lg shadow-green-300/30 scale-105'
-                          : 'bg-white border border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-600 hover:bg-green-50'
-                      }`}
-                    >
-                      {category}
-                      <span className={`ml-1.5 text-xs ${
-                        activeCategory === category ? 'text-white/70' : 'text-gray-400'
-                      }`}>
-                        ({count})
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Product grid */}
+            {/* Grille produits */}
             {filteredProducts.length > 0 ? (
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
                 {filteredProducts.map((product, index) => (
                   <ProductCard key={product.id} product={product} index={index} />
                 ))}
@@ -239,7 +166,12 @@ export default function Catalogue() {
                   Essayez de modifier vos critères de recherche ou de filtrage.
                 </p>
                 <button
-                  onClick={() => { setSearchQuery(''); setActiveCategory('Tous'); setSortBy('default'); }}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveCategory('Tous');
+                    setSortBy('default');
+                    window.dispatchEvent(new Event('catalogue:reset'));
+                  }}
                   className="mt-4 px-6 py-2 bg-green-100 text-green-700 font-medium rounded-full hover:bg-green-200 transition-colors"
                 >
                   Réinitialiser les filtres
@@ -247,7 +179,7 @@ export default function Catalogue() {
               </div>
             )}
 
-            {/* Results count */}
+            {/* Nombre de résultats */}
             {filteredProducts.length > 0 && (
               <div className="mt-8 text-center text-sm text-gray-400">
                 {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} affiché{filteredProducts.length > 1 ? 's' : ''}
